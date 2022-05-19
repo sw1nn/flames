@@ -50,6 +50,59 @@ GET /flames.svg?remove=%28socketRead|epollWait|socketAccept|readBytes%29
 GET /flames.svg?filter=flames.core
 ```
 
+### REPL Usage
+
+Some convenience functions are supplied in the `flames.repl` ns.
+
+```clojure
+user> (require '[flames.repl :as fr)
+Warning: protocol #'clj-radix/IRadixTree is overwriting function update
+WARNING: update already refers to: #'clojure.core/update in namespace: clj-radix, being replaced by: #'clj-radix/update
+nil
+user> (fr/flames-start!)
+View flames graph at http://localhost:54321/flames.svg
+In case of error consult the output of (doctor)
+nil
+user> (fr/flames-stop!)
+nil
+```
+
+There is support for opening the resultant svg in a suitable app, either by delegating to xdg with `{:open-method :xdg-open}` or letting the JVM open a platform browser via `{:open-method :browse}`
+```
+user> (fr/flames-start!)
+View flames graph at http://localhost:54321/flames.svg
+In case of error consult the output of (doctor)
+nil
+user> (fr/flames-stop! {:open-method :xdg-open})
+opening  file:/tmp/flames8445716098061321230.svg  using  :xdg-open
+Opening in existing browser session.
+
+nil
+```
+
+The flames graph output can be manipulated by passing a regex `:remove` or `:filter` argument, where remove and filter are analogous to clojure `remove` and `filter`
+```clojure
+user> (fr/flames-start! {:remove #"nrepl.bencode"})
+View flames graph at http://localhost:54321/flames.svg?remove=nrepl.bencode
+
+user>  (fr/flames-start! {:filter #"(myapp|another-app)"})
+View flames graph at http://localhost:54321/flames.svg?filter=%28myapp%7Canother-app%29
+
+```
+
+
+There are some external application dependencies. The `(doctor)` fn checks they are available. 
+```
+user> (fr/doctor) ;; Checks system dependencies
+{:perl "5.034001", :riemann "0.3.6"}
+
+;; When riemann jvm profiler not found
+user> (doctor)
+{:perl "5.034001",
+ :riemann
+ "Cannot run program \"riemann\": error=2, No such file or directory"}
+user> 
+```
 ## Maturity status
 
 Completely experimental.
