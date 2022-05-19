@@ -79,20 +79,23 @@
     [:get "/flames.svg"] (svg @state req)
     {:body "Not found", :status 404}))
 
-(defn ^Closeable start!
-  [opts]
+
+(defrecord Flames [opts http-shutdown profiler]
+  Closeable
+  (close [_]
+    (profiler/stop! profiler)
+    (http-shutdown)))
+
+(defn ^Flames start!
+  [{:or {port 54321 host "localhost"} :as opts}]
   (let [state (atom nil)
         handler (-> #(handler state %)
-                    params/wrap-params)
-        defaults {:port 54332, :host "localhost"}
-        opts (merge defaults opts)
-        server (httpd/run-server handler (select-keys opts [:host :port]))
-        profiler (profiler/start (select-keys opts [:host :port :dt :load]))]
-    (reify Closeable
-      (close [this]
-        (profiler/stop! profiler)
-        (server)))))
+                    params/wrap-params)]
+    (->Flames opts
+              (httpd/run-server handler opts)
+              (profiler/start opts))))
 
-(defn stop!
-  [handle]
-  (.close ^Closeable handle))
+(defn stop! [{:keys [opts] :as flames}]
+  (when-let [hook (:hook opts)]
+    (hook opts))
+  (.close ^Closeable flames))
